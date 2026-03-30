@@ -166,7 +166,7 @@
 <div class="relative">
   <div class="mb-2">
     <input
-      class="border-b-stone-200 border-b-2 w-full focus:border-b-pink-600"
+      class="w-full border-b border-gray-300 py-1 text-base focus:border-b-2 focus:border-highlight focus:outline-none transition-all bg-transparent"
       bind:value={searchString}
       on:input={search}
       on:focus={search}
@@ -195,12 +195,13 @@
     </div>
   {/if}
 
-  <p class="text-sm text-stone-600">
+  <p class="text-sm mt-3" style="color: #757575;">
     Enter a <span
-      class="text-highlight hover:cursor-pointer"
+      class="cursor-help"
+      style="border-bottom: 1px dashed;"
       title="Neighborhood Profile Areas (NPAs) are geographic areas used for the organization and presentation of data in the Quality of Life Study. The boundaries were developed with community input and are based on one or more Census block groups."
     >
-      NPA</span
+      Ward</span
     >, address, NSA or zip code.
   </p>
 </div>

@@ -12,6 +12,15 @@
   import { sendDownload, formatNumber } from "./utils"
 
   let download
+  let openGroup = null  // tracks which dropdown is open
+
+  function toggleGroup(group) {
+    openGroup = openGroup === group ? null : group
+  }
+
+  function closeAll() {
+    openGroup = null
+  }
 
   function doDownload() {
     const selectedFilter =
@@ -113,10 +122,10 @@
     download = "default"
   }
 
-  function selecGroup(group) {
-    $selectedNeighborhoods = groups[group][download]
-    download = "default"
+  function selectItem(items) {
+    $selectedNeighborhoods = items
     $mapZoom = true
+    openGroup = null
   }
 
   function print() {
@@ -129,51 +138,88 @@
   }
 </script>
 
+<style>
+  .approx-container {
+    position: relative;
+    display: inline-block;
+  }
+  .approx-link {
+    color: #e20025;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-decoration: underline;
+    margin-left: 8px;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+  }
+  .approx-link:hover {
+    color: #9e0018;
+  }
+  .approx-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    min-width: 180px;
+    z-index: 999;
+    padding: 4px 0;
+  }
+  .approx-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    text-align: left;
+    font-size: 0.875rem;
+    color: #1b2631;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: Roboto, sans-serif;
+  }
+  .approx-dropdown-item:hover {
+    background: #f5f5f5;
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 998;
+  }
+</style>
+
 <Time />
 
-<div class="pt-3 text-right">
-  Approximate:
-
-  {#each Object.keys(groups) as group}
-    <select
-      class="my-2 md:my-0 ml-1 text-white bg-highlight shadow transition-shadow  hover:shadow-lg pl-3 py-1 rounded"
-      bind:value={download}
-      on:change={() => selecGroup(group)}
-    >
-      <option value="default">{group}</option>
-      {#each Object.keys(groups[group]) as geounit}
-        <option value={geounit}>{geounit}</option>
-      {/each}
-    </select>
-  {/each}
+<div class="py-3 text-right flex justify-end items-center gap-2">
+  <button class="bg-gray-200 text-black hover:bg-gray-300 px-4 py-2 font-bold text-sm uppercase" on:click={() => ($selectedNeighborhoods = [])}>Clear Selected</button>
+  <button class="bg-highlight text-white hover:bg-red-800 px-4 py-2 font-bold text-sm uppercase" on:click={print}>Report</button>
+  <button class="bg-highlight text-white hover:bg-red-800 px-4 py-2 font-bold text-sm uppercase" on:click={() => window.print()}>Print Map</button>
 </div>
 
-<div class="py-3 text-right">
-  <button
-    class="text-white bg-highlight shadow transition-shadow  hover:shadow-lg px-3 py-1 rounded"
-    on:click={print}>Print</button
-  >
-  <select
-    class="ml-1 text-white bg-highlight shadow transition-shadow hover:shadow-lg px-3 py-1 rounded"
-    bind:value={download}
-    on:change={doDownload}
-  >
-    <option value="default">Download</option>
-    <option value="csv">CSV</option>
-    <option value="geojson">GeoJSON</option>
-    <option
-      value="scsv"
-      class="disabled:text-gray-300"
-      disabled={$selectedNeighborhoods.length === 0}>Selected CSV</option
-    >
-    <option
-      value="sgeojson"
-      class="disabled:text-gray-300"
-      disabled={$selectedNeighborhoods.length === 0}>Selected GeoJSON</option
-    >
-    <option value="metadata">Metadata</option>
-    <option value="zip">All Data (zip)</option>
-  </select>
+<div class="text-right text-sm text-gray-700 flex justify-end items-center flex-wrap gap-1 mb-2">
+  <span class="mr-1">Approximate:</span>
+  {#each Object.keys(groups) as group}
+    <div class="approx-container">
+      <button class="approx-link" on:click|stopPropagation={() => toggleGroup(group)}>
+        {group}
+      </button>
+      {#if openGroup === group}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
+        <div class="overlay" on:click={closeAll}></div>
+        <div class="approx-dropdown">
+          {#each Object.keys(groups[group]) as item}
+            <button class="approx-dropdown-item" on:click={() => selectItem(groups[group][item])}>
+              {item}
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/each}
 </div>
 
 <Table />

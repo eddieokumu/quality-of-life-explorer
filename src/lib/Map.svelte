@@ -428,12 +428,7 @@
 </script>
 
 <div id="map" use:init class="w-full h-full" />
-{#if interactive}
-<button
-  class="absolute bottom-2 right-2 bg-white shadow border-2 text-sm border-gray-200 rounded-md hover:bg-gray-100 p-1"
-  on:click={() => ($selectedNeighborhoods = [])}>Clear</button
->
-{/if}
+
 <Legend />
 
 <style>

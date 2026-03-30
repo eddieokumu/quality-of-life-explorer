@@ -6,15 +6,23 @@
     calcSelected,
     selectedNeighborhoods,
     yearIdx,
+    breaks,
+    colors
   } from "../store/store"
   import { formatNumber, isNumeric } from "./utils"
   import { equalIntervalBreaks } from 'simple-statistics'
-  import { onMount } from "svelte"
+  import { onMount, tick } from "svelte"
 
   let tchart
   let dchart
   let ApexCharts
   let mounted = false
+
+  // SVG distribution chart state
+  let distChartData = []
+  let distMedian = '0'
+  let distYear = ''
+  let distSelected = []
 
   onMount(async () => {
     const { default: apexcharts } = await import("apexcharts")
@@ -23,64 +31,82 @@
   })
 
   // trend chart
-  $: if (
-    mounted &&
-    $selectedData &&
-    $selectedNeighborhoods &&
-    $selectedData.years.length > 1
-  ) {
-    trendChart()
-  } else {
-    if (tchart) {
-      tchart.destroy()
-      tchart = null
+  $: {
+    if (mounted && $selectedData && $selectedNeighborhoods) {
+      handleTrendChart($selectedData.years && $selectedData.years.length > 1);
     }
   }
 
-  // histogram
-  $: if (mounted && $selectedNeighborhoods && $selectedData && $yearIdx >= 0) {
-    distributionChart()
+  async function handleTrendChart(shouldShow) {
+    if (shouldShow) {
+      await tick();
+      trendChart();
+    } else if (tchart) {
+      tchart.destroy();
+      tchart = null;
+    }
+  }
+
+  // SVG Data Distribution chart — purely reactive
+  $: if ($selectedData && $selectedNeighborhoods && $yearIdx >= 0 && $breaks) {
+    updateDistChart()
+  }
+
+  function updateDistChart() {
+    const rawData = []
+    distYear = $selectedData.years[$yearIdx]
+
+    for (const key in $selectedData.m) {
+      const val = $selectedData.m[key][$yearIdx]
+      if (isNumeric(val)) {
+        rawData.push({ id: key, val })
+      }
+    }
+    rawData.sort((a, b) => a.val - b.val)
+
+    const n = rawData.length
+    let medVal = 0
+    if (n > 0) {
+      medVal = n % 2 === 0
+        ? (rawData[n/2 - 1].val + rawData[n/2].val) / 2
+        : rawData[Math.floor(n/2)].val
+    }
+    distMedian = formatNumber(medVal, $selectedConfig.format || null)
+    distSelected = $selectedNeighborhoods
+    distChartData = rawData
+  }
+
+  // Determine which of the 5 break bands a value belongs to
+  function getBandIndex(val, bks) {
+    for (let i = 0; i < bks.length; i++) {
+      if (val <= bks[i]) return i
+    }
+    return bks.length - 1
   }
 
   function trendChart() {
     const countySeries = []
     $calcCounty.forEach((el, idx) => {
-      countySeries.push({
-        x: $selectedData.years[idx],
-        y: el,
-      })
+      if (el !== null && el !== undefined) {
+        countySeries.push({
+          x: parseInt($selectedData.years[idx], 10),
+          y: el,
+        })
+      }
     })
 
-    // so we don't duplicate years
-    const usedYears = []
-
     let options = {
-      title: {
-        text: $selectedConfig.title,
-      },
-      legend: {
-        showForSingleSeries: true,
-      },
       chart: {
         type: "line",
-        height: "240px",
-        zoom: {
-          enabled: false,
-        },
-        toolbar: {
-          export: {
-            csv: {
-              filename: $selectedConfig.title,
-              headerCategory: "Year",
-            },
-            svg: {
-              filename: $selectedConfig.title,
-            },
-            png: {
-              filename: $selectedConfig.title,
-            },
-          },
-        },
+        height: 200,
+        zoom: { enabled: false },
+        toolbar: { show: false },
+        fontFamily: 'Roboto, sans-serif',
+      },
+      markers: {
+        size: 4,
+        strokeWidth: 0,
+        hover: { sizeOffset: 2 }
       },
       series: [
         {
@@ -89,43 +115,48 @@
         },
       ],
       xaxis: {
-        type: "datetime",
-        tooltip: {
-          enabled: false,
-        },
+        type: "numeric",
+        tickAmount: $selectedData.years.length - 1 > 0 ? $selectedData.years.length - 1 : 1,
+        tooltip: { enabled: false },
         labels: {
-          datetimeFormatter: {
-            year: "yyyy",
-            month: "MMM yyyy",
-            day: "dd MMM",
-            hour: "HH:mm",
-          },
+          style: { fontSize: '10px', colors: '#999' },
+          formatter: function(val) {
+            return Math.floor(val).toString();
+          }
         },
+        axisBorder: { show: false },
+        axisTicks: { show: false },
       },
       stroke: {
         curve: "smooth",
+        width: 2,
       },
-      colors: ["#008FFB", "#DB2777"],
+      colors: ["#48a9a6", "#e20025"],
       yaxis: {
         min: 0,
         labels: {
+          style: { fontSize: '10px', colors: '#999' },
           formatter: (value) =>
             formatNumber(value, $selectedConfig.format || null),
         },
       },
+      grid: {
+        borderColor: '#e5e7eb',
+        strokeDashArray: 4,
+        xaxis: { lines: { show: false } },
+        yaxis: { lines: { show: true } },
+      },
       tooltip: {
-        x: {
-          format: "yyyy",
-        },
+        x: { format: "yyyy" },
       },
     }
 
     if ($selectedNeighborhoods.length > 0) {
       const selectSeries = []
       $calcSelected.forEach((el, idx) => {
-        if (el !== null) {
+        if (el !== null && el !== undefined) {
           selectSeries.push({
-            x: $selectedData.years[idx],
+            x: parseInt($selectedData.years[idx], 10),
             y: el,
           })
         }
@@ -149,160 +180,161 @@
     }
   }
 
-  function distributionChart() {
-    const binCount = 10
-    const data = []
 
-    const histDataArray = Object.values($selectedData.m).map(el => {
-      if (el[$yearIdx] !== null) return el[$yearIdx]
-    })
-
-    const equalBreaks = equalIntervalBreaks(histDataArray, binCount)
-    equalBreaks.shift()
-    const equalBins= Array(binCount).fill(0)
-    const equalSelectBins = Array(binCount).fill(0)
-
-    for (const key in $selectedData.m) {
-      equalBreaks.every((el, idx) => {
-        if (!isNumeric($selectedData.m[key][$yearIdx])) return false
-
-        if ($selectedData.m[key][$yearIdx] <= el) {
-          equalBins[idx] += 1
-          return false
-        }
-        return true
-      })
-    }
-
-    $selectedNeighborhoods.forEach(n => {
-      equalBreaks.every((el, idx) => {
-        if (!$selectedData.m[n] || !isNumeric($selectedData.m[n][$yearIdx])) return false
-
-        if ($selectedData.m[n][$yearIdx] <= el) {
-          equalSelectBins[idx] += 1
-          return false
-        }
-        return true
-      })
-    })
-
-    equalBins.forEach((el, idx) => {
-      const datum = {
-        x: idx + 1,
-        y: el,
-      }
-
-      if (equalSelectBins[idx] > 0) {
-        datum.goals = [
-          {
-            name: "Selected",
-            value: equalSelectBins[idx],
-            strokeHeight: 3,
-            strokeColor: "#DB2777",
-          },
-        ]
-      }
-      data.push(datum)
-    })
-
-
-    const options = {
-      title: {
-        text: `NPA Distribution, ${$selectedData.years[$yearIdx]}`,
-        margin: 0,
-        offsetY: 20,
-      },
-      series: [
-        {
-          name: "NPA Frequency",
-          data: data,
-        }
-      ],
-      chart: {
-        height: 130,
-        type: "bar",
-        stacked: false,
-        sparkline: {
-          enabled: false,
-        },
-        toolbar: {
-          offsetY: 20,
-          tools: {
-            download: true,
-            selection: false,
-            zoom: false,
-            zoomin: false,
-            zoomout: false,
-            pan: false,
-            reset: false,
-          },
-          export: {
-            csv: {
-              filename: $selectedConfig.title + " Histogram",
-              headerCategory: "Year",
-            },
-            svg: {
-              filename: $selectedConfig.title + " Histogram",
-            },
-            png: {
-              filename: $selectedConfig.title + " Histogram",
-            },
-          },
-        },
-      },
-      plotOptions: {
-        bar: {
-          columnWidth: "95%",
-        },
-      },
-      dataLabels: {
-        enabled: false,
-      },
-      legend: {
-        show: false
-      },
-      yaxis: {
-        show: false,
-      },
-      colors: ["#008FFB", "#DB2777"],
-      xaxis: {
-        axisBorder: {
-          show: false,
-        },
-        axisTicks: {
-          show: false,
-        },
-        labels: {
-          show: false
-        }
-      },
-      grid: {
-        show: false,
-      },
-      tooltip: {
-        enabled: true,
-        followCursor: true,
-        marker: {
-          show: false,
-        },
-        x: {
-          show: false
-        },
-
-      },
-    }
-
-    if (!dchart) {
-      dchart = new ApexCharts(document.querySelector("#dchart"), options)
-      dchart.render()
-    } else {
-      dchart.updateOptions(options)
-    }
-  }
 </script>
 
+<style>
+  .chart-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    padding: 20px 15px 15px 15px;
+    border-radius: 4px;
+  }
+  .dist-title {
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #444;
+    margin: 0 0 4px;
+    font-family: Roboto, sans-serif;
+  }
+  .dist-legend {
+    text-align: center;
+    font-size: 0.78em;
+    color: #757575;
+    margin: 2px 0 4px;
+    font-family: Roboto, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e20025;
+    margin-right: 3px;
+    vertical-align: middle;
+  }
+</style>
 
-<div class="bg-white shadow-md p-2">
-  <div id="tchart" class="pt-2" />
-  <div id="dchart" class="pb-2" />
+<div class="flex flex-col gap-3">
+  <!-- Card 1: SVG Data Distribution Chart -->
+  <div class="chart-card">
+    <h1 class="dist-title">Data Distribution, {distYear}</h1>
+    <div class="dist-legend">
+      {#if distSelected.length > 0}
+        <span><svg class="inline align-middle" style="width: 1.25em; height: 1.25em; fill: #e20025; margin-right: 2px;" viewBox="0 0 32 32"><path d="M16 2.688c7.375 0 13.313 5.938 13.313 13.313s-5.938 13.313-13.313 13.313-13.313-5.938-13.313-13.313 5.938-13.313 13.313-13.313z"></path></svg> Selected</span>
+      {/if}
+      <span><svg class="inline align-middle" style="width: 1.25em; height: 1.25em; fill: #757575; margin-right: 2px;" viewBox="0 0 32 32"><path d="M16 13.313c1.438 0 2.688 1.25 2.688 2.688s-1.25 2.688-2.688 2.688-2.688-1.25-2.688-2.688 1.25-2.688 2.688-2.688zM24 13.313c1.438 0 2.688 1.25 2.688 2.688s-1.25 2.688-2.688 2.688-2.688-1.25-2.688-2.688 1.25-2.688 2.688-2.688zM8 13.313c1.438 0 2.688 1.25 2.688 2.688s-1.25 2.688-2.688 2.688-2.688-1.25-2.688-2.688 1.25-2.688 2.688-2.688z"></path></svg> Median {distMedian}</span>
+    </div>
+    {#if distChartData.length > 1 && $breaks}
+      {@const W = 340}
+      {@const H = 140}
+      {@const PAD_L = 26}
+      {@const PAD_R = 6}
+      {@const PAD_B = 4}
+      {@const PAD_T = 4}
+      {@const n = distChartData.length}
+      {@const minVal = distChartData[0].val}
+      {@const maxVal = distChartData[n-1].val}
+      {@const valRange = maxVal - minVal || 1}
+      {@const chartW = W - PAD_L - PAD_R}
+      {@const chartH = H - PAD_B - PAD_T}
+      {@const bandColors = ['#fce8eb','#f5a5b0','#e8556a','#e20025','#9e0018']}
+      {@const getX = (i) => PAD_L + (i / (n - 1)) * chartW}
+      {@const getY = (v) => PAD_T + chartH - ((v - minVal) / valRange) * chartH}
+
+      <svg viewBox="0 0 {W} {H}" width="100%" style="display:block;" xmlns="http://www.w3.org/2000/svg">
+        <!-- Y axis grid lines -->
+        {#each [0, 0.25, 0.5, 0.75, 1] as t}
+          {@const ty = PAD_T + chartH * (1 - t)}
+          <line x1={PAD_L} y1={ty} x2={W - PAD_R} y2={ty} stroke="#e5e7eb" stroke-width="1" stroke-dasharray="3,2"/>
+          <text x={PAD_L - 4} y={ty + 4} text-anchor="end" fill="#bbb" font-size="7.5">{formatNumber(minVal + t * valRange)}</text>
+        {/each}
+        <!-- Y axis line -->
+        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + chartH} stroke="#ddd" stroke-width="1"/>
+
+        <!--
+          No-gap area fill: for each consecutive pair of points we draw a
+          filled trapezoid. Color is determined by the band of the LEFT point.
+          This guarantees zero gaps between segments.
+        -->
+        {#each distChartData as d, i}
+          {#if i < n - 1}
+            {@const d2 = distChartData[i+1]}
+            {@const x1 = getX(i)}
+            {@const y1 = getY(d.val)}
+            {@const x2 = getX(i+1)}
+            {@const y2 = getY(d2.val)}
+            {@const baseline = PAD_T + chartH}
+            {@const bi = getBandIndex(d.val, $breaks)}
+            <polygon
+              points="{x1},{baseline} {x1},{y1} {x2},{y2} {x2},{baseline}"
+              fill={bandColors[bi]}
+            />
+          {/if}
+        {/each}
+        <!-- Last bar (single point at the far right) -->
+        {#if n > 0}
+          {@const d = distChartData[n-1]}
+          {@const x1 = getX(n-2 >= 0 ? n-1 : 0)}
+          {@const y1 = getY(d.val)}
+          {@const baseline = PAD_T + chartH}
+          {@const bi = getBandIndex(d.val, $breaks)}
+          <!-- already covered by trapezoid loop above -->
+        {/if}
+
+        <!-- Outline polyline on top for clean edge -->
+        <polyline
+          points={distChartData.map((d, i) => `${getX(i)},${getY(d.val)}`).join(' ')}
+          fill="none"
+          stroke="rgba(0,0,0,0.06)"
+          stroke-width="1"
+        />
+
+        <!-- Dashed median line at actual median value -->
+        {#if distChartData.length > 0}
+          {@const medIdx = Math.floor(n / 2)}
+          {@const medRawVal = n % 2 === 0 ? (distChartData[n/2-1].val + distChartData[n/2].val)/2 : distChartData[medIdx].val}
+          {@const medY = getY(medRawVal)}
+          <line
+            x1={PAD_L}
+            y1={medY}
+            x2={W - PAD_R}
+            y2={medY}
+            stroke="#757575"
+            stroke-width="1.5"
+            stroke-dasharray="5,2"
+          />
+        {/if}
+
+        <!-- Selected neighborhood dots -->
+        {#each distChartData as d, i}
+          {#if distSelected.includes(d.id)}
+            <circle cx={getX(i)} cy={getY(d.val)} r="4" fill="#e20025"/>
+          {/if}
+        {/each}
+      </svg>
+    {/if}
+  </div>
+
+  <!-- Card 2: Trend chart -->
+  {#if $selectedData && $selectedData.years.length > 1}
+    <div class="chart-card">
+      {#if $selectedConfig}
+        <h1 class="dist-title">{$selectedConfig.title}</h1>
+        <div class="dist-legend pb-2">
+          <span style="color: #48a9a6;"><svg class="inline align-middle" style="width: 1.5em; height: 1.5em; margin-right: 2px; margin-bottom: 2px;" viewBox="0 0 32 32"><path fill="currentColor" d="M21.313 8h8v8l-3.063-3.063-8.375 8.375-5.313-5.313-8 8-1.875-1.875 9.875-9.875 5.313 5.313 6.5-6.5z"></path></svg> County</span>
+          {#if $selectedNeighborhoods.length > 0}
+            <span style="color: #e20025; margin-left: 8px;"><svg class="inline align-middle" style="width: 1.5em; height: 1.5em; margin-right: 2px; margin-bottom: 2px;" viewBox="0 0 32 32"><path fill="currentColor" d="M21.313 8h8v8l-3.063-3.063-8.375 8.375-5.313-5.313-8 8-1.875-1.875 9.875-9.875 5.313 5.313 6.5-6.5z"></path></svg> Selected</span>
+          {/if}
+        </div>
+      {/if}
+      <div id="tchart" />
+    </div>
+  {/if}
 </div>
