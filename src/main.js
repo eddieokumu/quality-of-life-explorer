@@ -3,6 +3,7 @@ import './css/metadata.css'
 import './css/table.css'
 import './css/sw-dialog.css'
 import './lib/registerServiceWorker'
+import { selectedMetric } from './store/store'
 import Tabs from './lib/Tabs.svelte'
 import Meta from './lib/Meta.svelte'
 import Map from './lib/Map.svelte'
@@ -15,6 +16,18 @@ import NavMenu from './lib/NavMenu.svelte'
 import Help from './lib/Help.svelte'
 import Welcome from './lib/Welcome.svelte'
 
+
+// Bridge window.model.metricId setter → Svelte selectedMetric store
+// This makes the related variable links in meta HTML files work
+window.model = {}
+Object.defineProperty(window.model, 'metricId', {
+  set(value) {
+    // Ensure the metric has the 'm' prefix
+    const metric = value.startsWith('m') ? value : `m${value}`
+    selectedMetric.set(metric)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+})
 
 new NavMenu({
   target: document.getElementById("navmenu")

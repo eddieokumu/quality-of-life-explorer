@@ -1,165 +1,85 @@
 <script>
-  import { selectedNeighborhoods, selectedData, mapZoom } from "../store/store"
-  import { isNumeric } from "./utils"
+  import { selectedNeighborhoods, mapZoom } from "../store/store"
+  import groups from "../assets/neighborhod-groups.json"
+  import wardNames from "../assets/ward-names.json"
 
   let searchString = ""
   let searchResults = []
+  let inputFocused = false
 
-  function search() {
-    searchResults = []
-    const str = searchString.trim()
+  // Pre-build a flat list of all searchable items for fast lookup
+  // Format: { cat, label, sublabel, ids: [] }
+  const searchIndex = buildSearchIndex()
 
-    // if numeric look for NPA or zip
-    if (isNumeric(str)) {
-      // NPA
-      const keys = Object.keys($selectedData.m)
-      if (keys.indexOf(str) !== -1)
-        searchResults = searchResults.concat({
-          cat: "NPA",
-          id: str,
-          label: str,
-        })
+  function buildSearchIndex() {
+    const index = []
 
-      // zipcode
-      if (str.length === 5) {
-        fetch(
-          `https://api.mcmap.org/v1/query/zipcodes?columns=gid as id, zip as label, 'ZIP' as cat&limit=10&filter=zip='${str}'`
-        )
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error()
-            }
-            return response.json()
-          })
-          .then((json) => {
-            searchResults = searchResults.concat(json)
-          })
-          .catch((error) => {
-            console.error(
-              "There has been a problem with your fetch operation:",
-              error
-            )
-          })
+    // Add individual wards (searchable by ID or name)
+    for (const [id, name] of Object.entries(wardNames)) {
+      // Find which constituency this ward belongs to
+      let constituency = ""
+      for (const [con, wards] of Object.entries(groups.Constituency)) {
+        if (wards.includes(id)) { constituency = con; break }
       }
+      index.push({
+        cat: "Ward",
+        label: name,
+        sublabel: constituency ? `Ward ${id} · ${constituency}` : `Ward ${id}`,
+        ids: [id],
+        searchTerms: [name.toLowerCase(), id]
+      })
     }
 
-    // if string and larger than 4 chars
-    if (!isNumeric(str) && str.length >= 4) {
-      // Address
-      const filter = encodeURIComponent(
-        `ts @@ to_tsquery('addressing_en', '${
-          str.toUpperCase().replace(/ /g, "&") + ":*"
-        }')`
-      )
-      fetch(
-        `https://api.mcmap.org/v1/query/master_address_table?columns=objectid as id, full_address as label, 'ADDRESS' as cat&limit=10&filter=${filter}`
-      )
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error()
-          }
-          return response.json()
-        })
-        .then((json) => {
-          searchResults = searchResults.concat(json)
-        })
-        .catch((error) => {
-          console.error(
-            "There has been a problem with your fetch operation:",
-            error
-          )
-        })
-
-      // NSA
-      fetch(
-        `https://api.mcmap.org/v1/query/neighborhood_statistical_areas?columns=gid as id, nsa_name as label, 'NSA' as cat&limit=10&filter=nsa_name%20ilike%20'${str}%25'`
-      )
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error()
-          }
-          return response.json()
-        })
-        .then((json) => {
-          searchResults = searchResults.concat(json)
-        })
-        .catch((error) => {
-          console.error(
-            "There has been a problem with your fetch operation:",
-            error
-          )
-        })
+    // Add constituencies (selects all wards in that constituency)
+    for (const [name, wards] of Object.entries(groups.Constituency)) {
+      index.push({
+        cat: "Constituency",
+        label: name,
+        sublabel: `${wards.length} wards`,
+        ids: wards,
+        searchTerms: [name.toLowerCase()]
+      })
     }
+
+    // Add municipalities
+    for (const [name, wards] of Object.entries(groups.Municipality)) {
+      index.push({
+        cat: "Municipality",
+        label: name,
+        sublabel: `${wards.length} wards`,
+        ids: wards,
+        searchTerms: [name.toLowerCase()]
+      })
+    }
+
+    return index
   }
 
-  function selectResults(cat, id) {
-    if (cat === "NPA") {
-      $selectedNeighborhoods = [id]
-      $mapZoom = true
+  function search() {
+    const str = searchString.trim().toLowerCase()
+
+    if (str.length === 0) {
+      searchResults = []
+      return
     }
-    if (cat === "NSA") {
-      fetch(
-        `https://api.mcmap.org/v1/intersect_feature/neighborhood_statistical_areas/neighborhoods?geom_column_from=the_geom&geom_column_to=the_geom&columns=neighborhoods.id&filter=neighborhood_statistical_areas.gid=${id}`
-      )
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error()
-          }
-          return response.json()
-        })
-        .then((json) => {
-          $selectedNeighborhoods = json.map((el) => el.id.toString())
-          $mapZoom = true
-        })
-        .catch((error) => {
-          console.error(
-            "There has been a problem with your fetch operation:",
-            error
-          )
-        })
-    }
-    if (cat === "ZIP") {
-      fetch(
-        `https://api.mcmap.org/v1/intersect_feature/zipcodes/neighborhoods?geom_column_from=the_geom&geom_column_to=the_geom&columns=neighborhoods.id&filter=zipcodes.gid=${id}`
-      )
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error()
-          }
-          return response.json()
-        })
-        .then((json) => {
-          $selectedNeighborhoods = json.map((el) => el.id.toString())
-          $mapZoom = true
-        })
-        .catch((error) => {
-          console.error(
-            "There has been a problem with your fetch operation:",
-            error
-          )
-        })
-    }
-    if (cat === "ADDRESS") {
-      fetch(
-        `https://api.mcmap.org/v1/intersect_feature/master_address_table/neighborhoods?geom_column_from=the_geom&geom_column_to=the_geom&columns=neighborhoods.id&filter=master_address_table.objectid=${id}`
-      )
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error()
-          }
-          return response.json()
-        })
-        .then((json) => {
-          $selectedNeighborhoods = json.map((el) => el.id.toString())
-          $mapZoom = true
-        })
-        .catch((error) => {
-          console.error(
-            "There has been a problem with your fetch operation:",
-            error
-          )
-        })
-    }
+
+    searchResults = searchIndex.filter(item =>
+      item.searchTerms.some(term => term.includes(str))
+    ).slice(0, 10)
+  }
+
+  function selectResult(result) {
+    $selectedNeighborhoods = result.ids
+    $mapZoom = true
+    searchResults = []
+    searchString = ""
+  }
+
+  // Badge color by category
+  const catColor = {
+    Ward: "#e20025",
+    Constituency: "#1a5276",
+    Municipality: "#117a65"
   }
 </script>
 
@@ -169,40 +89,53 @@
       class="w-full border-b border-gray-300 py-1 text-base focus:border-b-2 focus:border-highlight focus:outline-none transition-all bg-transparent"
       bind:value={searchString}
       on:input={search}
-      on:focus={search}
-      on:blur={() => setTimeout(() => (searchResults = []), 250)}
-      placeholder="Search..."
+      on:focus={() => { inputFocused = true; search() }}
+      on:blur={() => setTimeout(() => { searchResults = []; inputFocused = false }, 200)}
+      placeholder="Search ward or constituency…"
+      autocomplete="off"
+      spellcheck="false"
     />
   </div>
 
   {#if searchResults.length > 0}
     <div
-      class="absolute w-full bg-white overflow-y-auto overflow-x-hidden z-50"
-      style="max-height: 200px;"
+      class="absolute w-full bg-white border border-gray-200 shadow-lg overflow-y-auto overflow-x-hidden z-50 rounded-sm"
+      style="max-height: 260px;"
     >
       {#each searchResults as result}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
         <div
-          class="cursor-pointer whitespace-nowrap text-sm rounded text-blue-700 py-2 px-1 hover:bg-blue-500 hover:text-white transition-colors"
-          on:click={() => selectResults(result.cat, result.id)}
-          on:keypress={() => selectResults(result.cat, result.id)}
+          class="cursor-pointer text-sm px-3 py-2 hover:bg-gray-100 transition-colors flex items-center gap-2 border-b border-gray-100 last:border-0"
+          on:click={() => selectResult(result)}
         >
-          <span class="bg-blue-500 text-white mr-2 p-1 font-semibold"
-            >{result.cat.substring(0, 3)}</span
+          <span
+            class="flex-shrink-0 text-white text-xs font-bold px-1.5 py-0.5 rounded"
+            style="background: {catColor[result.cat] || '#555'}; min-width: 2.5rem; text-align: center;"
           >
-          {result.label}
+            {result.cat.substring(0, 4).toUpperCase()}
+          </span>
+          <span class="flex-1 min-w-0">
+            <span class="font-medium text-gray-900 block truncate">{result.label}</span>
+            <span class="text-gray-400 text-xs">{result.sublabel}</span>
+          </span>
         </div>
       {/each}
     </div>
   {/if}
 
   <p class="text-sm mt-3" style="color: #757575;">
-    Enter a <span
+    Search by
+    <span
       class="cursor-help"
       style="border-bottom: 1px dashed;"
-      title="Neighborhood Profile Areas (NPAs) are geographic areas used for the organization and presentation of data in the Quality of Life Study. The boundaries were developed with community input and are based on one or more Census block groups."
-    >
-      Ward</span
-    >, address, NSA or zip code.
+      title="Wards are the smallest geographic units used for data presentation in the Machakos County Quality of Life Explorer. Each ward falls within one of the eight constituencies."
+    >ward name</span>,
+    ID, or
+    <span
+      class="cursor-help"
+      style="border-bottom: 1px dashed;"
+      title="Machakos County has 8 constituencies: Kangundo, Kathiani, Machakos Town, Masinga, Matungulu, Mavoko, Mwala, and Yatta."
+    >constituency</span>.
   </p>
 </div>
 

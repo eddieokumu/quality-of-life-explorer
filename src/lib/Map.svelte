@@ -13,6 +13,7 @@
     minBreak,
   } from "../store/store"
   import { isNumeric, formatNumber, sendDownload } from "./utils"
+  import wardNames from "../assets/ward-names.json"
   import "maplibre-gl/dist/maplibre-gl.css"
  
 
@@ -163,11 +164,10 @@
       const id = e.features[0].properties.id
       const idx = $selectedNeighborhoods.indexOf(id)
       if (idx === -1) {
-        $selectedNeighborhoods.push(id)
+        $selectedNeighborhoods = [...$selectedNeighborhoods, id]
       } else {
-        $selectedNeighborhoods.splice(idx, 1)
+        $selectedNeighborhoods = $selectedNeighborhoods.filter(n => n !== id)
       }
-      $selectedNeighborhoods = $selectedNeighborhoods
     })
 
     map.on("mousemove", "neighborhoods", (e) => {
@@ -178,7 +178,7 @@
         popup
           .setLngLat(e.lngLat)
           .setHTML(
-            `<div style="text-align: center; margin: 0; padding: 0;"><h3 style="font-size: 1.2em; margin: 0; padding: 0; line-height: 1em; font-weight: bold;">NPA ${id}</h3>${formatNumber(
+            `<div style="text-align: center; margin: 0; padding: 0;"><h3 style="font-size: 1.2em; margin: 0; padding: 0; line-height: 1em; font-weight: bold;">${wardNames[id]}</h3>${formatNumber(
               $selectedData.m[id][$yearIdx],
               $selectedConfig.format || null,
               $selectedConfig.decimals || null

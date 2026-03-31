@@ -77,7 +77,7 @@
       const header = []
       let body = ""
 
-      header.push("NPA")
+      header.push("Ward")
       header.push(...$selectedData.years)
 
       if ($selectedConfig.raw_label)

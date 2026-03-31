@@ -1,6 +1,7 @@
 <script>
   import { selectedData, yearIdx, selectedConfig, selectedNeighborhoods, highlightNeighborhoods } from '../store/store'
   import { isNumeric, formatNumber } from "./utils"
+  import wardNames from "../assets/ward-names.json"
 
 
   function trend(val1, val2, percent = null) {
@@ -32,8 +33,8 @@
   <thead>
     <tr>
       <th class="text-center"><span class="text-pink-800 hover:cursor-pointer"
-        title="Neighborhood Profile Areas (NPAs) are geographic areas used for the organization and presentation of data in the Quality of Life Study. The boundaries were developed with community input and are based on one or more Census block groups.">
-        NPA</span>
+        title="Wards are the smallest geographic units used for the organization and presentation of data in the Machakos County Quality of Life Explorer. Each ward falls within one of the eight constituencies.">
+        Ward</span>
       </th>
       <th class="text-right">{$selectedData.years[$yearIdx]}</th>
       {#if $selectedData.a}
@@ -56,8 +57,8 @@
     {#each $selectedNeighborhoods as neighborhood}
       {#if $selectedData.m[neighborhood]}
         <tr on:mouseleave={() => $highlightNeighborhoods = []} on:mouseenter={() => $highlightNeighborhoods = [neighborhood]} class="hover:bg-yellow-100 transition-colors">
-          <td  class="text-center">
-            {neighborhood}
+          <td class="text-left">
+            {wardNames[neighborhood] || neighborhood}
           </td>
           <td class="text-right">
             { formatNumber($selectedData.m[neighborhood][$yearIdx], $selectedConfig.format || null) }
