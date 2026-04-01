@@ -166,7 +166,7 @@
       if (idx === -1) {
         $selectedNeighborhoods = [...$selectedNeighborhoods, id]
       } else {
-        $selectedNeighborhoods = $selectedNeighborhoods.filter(n => n !== id)
+        $selectedNeighborhoods = (Array.isArray($selectedNeighborhoods) ? $selectedNeighborhoods : []).filter(n => n !== id)
       }
     })
 
@@ -180,8 +180,8 @@
           .setHTML(
             `<div style="text-align: center; margin: 0; padding: 0;"><h3 style="font-size: 1.2em; margin: 0; padding: 0; line-height: 1em; font-weight: bold;">${wardNames[id]}</h3>${formatNumber(
               $selectedData.m[id][$yearIdx],
-              $selectedConfig.format || null,
-              $selectedConfig.decimals || null
+              $selectedConfig['format'] || null,
+              $selectedConfig['decimals'] || null
             )}</div>`
           )
           .addTo(map)
@@ -218,7 +218,7 @@
       // add layers
       map.addSource("neighborhoods", {
         "type": "geojson",
-        "attribution": "<a href='https://mcmap.org/qol' target='_blank'>Quality of Life Explorer</a>",
+        "attribution": "<a href='https://mcmap.org/qol' target='_blank'>Machakos Quality of Life Explorer</a>",
         "data": "data/geography/geography.geojson.json"
       })
       map.addLayer({

@@ -1,9 +1,9 @@
 {
-  "name": "quality-of-life-explorer",
+  "name": "machakos-quality-of-life-explorer",
   "version": "4.2.0",
   "author": "Tobin Bradley",
   "license": "MIT",
-  "description": "Mecklenburg County Quality of Life Explorer",
+  "description": "Machakos County Quality of Life Explorer",
   "type": "module",
   "scripts": {
     "dev": "node build/build.cjs && vite",

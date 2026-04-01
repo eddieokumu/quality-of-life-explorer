@@ -61,7 +61,7 @@
             {wardNames[neighborhood] || neighborhood}
           </td>
           <td class="text-right">
-            { formatNumber($selectedData.m[neighborhood][$yearIdx], $selectedConfig.format || null) }
+            { formatNumber($selectedData.m[neighborhood][$yearIdx], $selectedConfig['format'] || null) }
           </td>
           {#if $selectedData.a}
           <td class="text-right">

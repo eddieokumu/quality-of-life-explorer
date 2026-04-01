@@ -12,7 +12,7 @@
 </script>
 
 <div class="bg-white shadow-md p-4 mt-6 print:hidden">
-  <h1 class="text-center font-semibold text-xl">Charlotte/Mecklenburg Quality of Life Explorer</h1>
+  <h1 class="text-center font-semibold text-xl">Machakos Quality of Life Explorer</h1>
   <h2 class="text-center text-lg">Print Report</h2>
 
   <div>

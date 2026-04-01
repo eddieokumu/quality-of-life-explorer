@@ -105,6 +105,8 @@
       {#each searchResults as result}
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <div
+          role="button"
+          tabindex="0"
           class="cursor-pointer text-sm px-3 py-2 hover:bg-gray-100 transition-colors flex items-center gap-2 border-b border-gray-100 last:border-0"
           on:click={() => selectResult(result)}
         >
