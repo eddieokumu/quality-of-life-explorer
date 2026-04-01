@@ -4,13 +4,13 @@ const config = {
   theme: {
     extend: {
       colors: {
-        'highlight': "#e20025",
-        'bul-secondary': "#48a9a6",
-        'bul-tertiary': "#1b2631",
-        'bul-neutral': "#757575",
-        'bul-text-body': "#555",
-        'bul-text-heading': "#1b2631",
-        'bul-bg-page': "#f2f2f2",
+        'highlight': "#2A9D8F",
+        'bul-secondary': "#FFBF00",
+        'bul-tertiary': "#264653",
+        'bul-neutral': "#7F8E93",
+        'bul-text-body': "#4A5A5D",
+        'bul-text-heading': "#264653",
+        'bul-bg-page': "#F6F7F6",
       },
       fontFamily: {
         sans: ['Roboto', 'Helvetica Neue', 'Calibri', 'Liberation Sans', 'sans-serif'],

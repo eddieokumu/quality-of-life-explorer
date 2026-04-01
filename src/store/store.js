@@ -9,7 +9,7 @@ dataJSON.sort((a, b) => a.category.localeCompare(b.category) || a.title.localeCo
 
 
 // This will control the number of breaks
-const colorList = ["rgb(238,250,227)", "rgb(186,228,188)", "rgb(123,204,196)", "rgb(67,162,202)", "rgb(8,104,172)"]
+const colorList = ["rgb(242,232,207)", "rgb(168,213,186)", "rgb(96,165,142)", "rgb(42,157,143)", "rgb(38,70,83)"]
 
 // Browser navigation detector
 let browserNav = false

@@ -77,7 +77,7 @@
 
   // Badge color by category
   const catColor = {
-    Ward: "#e20025",
+    Ward: "#2A9D8F",
     Constituency: "#1a5276",
     Municipality: "#117a65"
   }

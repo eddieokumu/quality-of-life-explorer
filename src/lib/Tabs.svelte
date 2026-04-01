@@ -41,13 +41,13 @@
   }
 
   .tab-btn:hover {
-    color: #1b2631;
+    color: #264653;
   }
 
   .tab-btn.is-active {
-    color: #1b2631;
+    color: #264653;
     font-weight: 700;
-    border-bottom: 4px solid #e20025;
+    border-bottom: 4px solid #2A9D8F;
   }
 
   /* Metric pill panel */
@@ -79,11 +79,11 @@
 
   .metric-chip:hover {
     background: #e0e0e0;
-    color: #1b2631;
+    color: #264653;
   }
 
   .metric-chip.is-active {
-    background: #e20025;
+    background: #2A9D8F;
     color: white;
     box-shadow: 0 2px 2px 0 rgba(0,0,0,.14), 0 3px 1px -2px rgba(0,0,0,.2), 0 1px 5px 0 rgba(0,0,0,.12);
   }

@@ -42,7 +42,7 @@
   <div class="flex columns-2 p-1  gap-1">
     {#if $selectedNeighborhoods.length > 0}
     <!-- selected -->
-    <div class="flex-grow text-center text-pink-600">
+    <div class="flex-grow text-center text-highlight">
       <div class="font-medium leading-none">SELECTED</div>
       <div class="font-bold text-2xl leading-7">
         {formatNumber($calcSelected[$yearIdx], $selectedConfig.format || null, $selectedConfig.decimals || null)}
@@ -56,7 +56,7 @@
     {/if}
 
     <!-- county -->
-    <div class="flex-grow text-center text-sky-600">
+    <div class="flex-grow text-center text-bul-secondary">
       <div class="font-medium leading-none">COUNTY</div>
       <div class="font-bold text-2xl leading-7">
         {formatNumber($calcCounty[$yearIdx], $selectedConfig.format || null, $selectedConfig.decimals || null)}

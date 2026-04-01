@@ -131,7 +131,7 @@
         curve: "smooth",
         width: 2,
       },
-      colors: ["#48a9a6", "#e20025"],
+      colors: ["#FFBF00", "#2A9D8F"],
       yaxis: {
         min: 0,
         labels: {
@@ -210,15 +210,7 @@
     justify-content: center;
     gap: 12px;
   }
-  .legend-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #e20025;
-    margin-right: 3px;
-    vertical-align: middle;
-  }
+
 </style>
 
 <div class="flex flex-col gap-3">
@@ -227,7 +219,7 @@
     <h1 class="dist-title">Data Distribution, {distYear}</h1>
     <div class="dist-legend">
       {#if distSelected.length > 0}
-        <span><svg class="inline align-middle" style="width: 1.25em; height: 1.25em; fill: #e20025; margin-right: 2px;" viewBox="0 0 32 32"><path d="M16 2.688c7.375 0 13.313 5.938 13.313 13.313s-5.938 13.313-13.313 13.313-13.313-5.938-13.313-13.313 5.938-13.313 13.313-13.313z"></path></svg> Selected</span>
+        <span><svg class="inline align-middle" style="width: 1.25em; height: 1.25em; fill: #2A9D8F; margin-right: 2px;" viewBox="0 0 32 32"><path d="M16 2.688c7.375 0 13.313 5.938 13.313 13.313s-5.938 13.313-13.313 13.313-13.313-5.938-13.313-13.313 5.938-13.313 13.313-13.313z"></path></svg> Selected</span>
       {/if}
       <span><svg class="inline align-middle" style="width: 1.25em; height: 1.25em; fill: #757575; margin-right: 2px;" viewBox="0 0 32 32"><path d="M16 13.313c1.438 0 2.688 1.25 2.688 2.688s-1.25 2.688-2.688 2.688-2.688-1.25-2.688-2.688 1.25-2.688 2.688-2.688zM24 13.313c1.438 0 2.688 1.25 2.688 2.688s-1.25 2.688-2.688 2.688-2.688-1.25-2.688-2.688 1.25-2.688 2.688-2.688zM8 13.313c1.438 0 2.688 1.25 2.688 2.688s-1.25 2.688-2.688 2.688-2.688-1.25-2.688-2.688 1.25-2.688 2.688-2.688z"></path></svg> Median {distMedian}</span>
     </div>
@@ -244,7 +236,7 @@
       {@const valRange = maxVal - minVal || 1}
       {@const chartW = W - PAD_L - PAD_R}
       {@const chartH = H - PAD_B - PAD_T}
-      {@const bandColors = ['#fce8eb','#f5a5b0','#e8556a','#e20025','#9e0018']}
+      {@const bandColors = ['rgb(242,232,207)','rgb(168,213,186)','rgb(96,165,142)','rgb(42,157,143)','rgb(38,70,83)']}
       {@const getX = (i) => PAD_L + (i / (n - 1)) * chartW}
       {@const getY = (v) => PAD_T + chartH - ((v - minVal) / valRange) * chartH}
 
@@ -315,7 +307,7 @@
         <!-- Selected neighborhood dots -->
         {#each distChartData as d, i}
           {#if distSelected.includes(d.id)}
-            <circle cx={getX(i)} cy={getY(d.val)} r="4" fill="#e20025"/>
+            <circle cx={getX(i)} cy={getY(d.val)} r="4" fill="#2A9D8F"/>
           {/if}
         {/each}
       </svg>
@@ -328,9 +320,9 @@
       {#if $selectedConfig}
         <h1 class="dist-title">{$selectedConfig.title}</h1>
         <div class="dist-legend pb-2">
-          <span style="color: #48a9a6;"><svg class="inline align-middle" style="width: 1.5em; height: 1.5em; margin-right: 2px; margin-bottom: 2px;" viewBox="0 0 32 32"><path fill="currentColor" d="M21.313 8h8v8l-3.063-3.063-8.375 8.375-5.313-5.313-8 8-1.875-1.875 9.875-9.875 5.313 5.313 6.5-6.5z"></path></svg> County</span>
+          <span style="color: #FFBF00;"><svg class="inline align-middle" style="width: 1.5em; height: 1.5em; margin-right: 2px; margin-bottom: 2px;" viewBox="0 0 32 32"><path fill="currentColor" d="M21.313 8h8v8l-3.063-3.063-8.375 8.375-5.313-5.313-8 8-1.875-1.875 9.875-9.875 5.313 5.313 6.5-6.5z"></path></svg> County</span>
           {#if $selectedNeighborhoods.length > 0}
-            <span style="color: #e20025; margin-left: 8px;"><svg class="inline align-middle" style="width: 1.5em; height: 1.5em; margin-right: 2px; margin-bottom: 2px;" viewBox="0 0 32 32"><path fill="currentColor" d="M21.313 8h8v8l-3.063-3.063-8.375 8.375-5.313-5.313-8 8-1.875-1.875 9.875-9.875 5.313 5.313 6.5-6.5z"></path></svg> Selected</span>
+            <span style="color: #2A9D8F; margin-left: 8px;"><svg class="inline align-middle" style="width: 1.5em; height: 1.5em; margin-right: 2px; margin-bottom: 2px;" viewBox="0 0 32 32"><path fill="currentColor" d="M21.313 8h8v8l-3.063-3.063-8.375 8.375-5.313-5.313-8 8-1.875-1.875 9.875-9.875 5.313 5.313 6.5-6.5z"></path></svg> Selected</span>
           {/if}
         </div>
       {/if}

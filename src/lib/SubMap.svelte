@@ -144,7 +144,7 @@
     display: inline-block;
   }
   .approx-link {
-    color: #e20025;
+    color: #2A9D8F;
     font-weight: 600;
     cursor: pointer;
     font-size: 0.875rem;
@@ -156,7 +156,7 @@
     font-family: inherit;
   }
   .approx-link:hover {
-    color: #9e0018;
+    color: #1D7A6F;
   }
   .approx-dropdown {
     position: absolute;
@@ -175,7 +175,7 @@
     padding: 8px 16px;
     text-align: left;
     font-size: 0.875rem;
-    color: #1b2631;
+    color: #264653;
     background: none;
     border: none;
     cursor: pointer;
